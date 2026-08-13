@@ -1,0 +1,127 @@
+// Prisma schema for Real Estate Agent Platform — MVP1
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Agent {
+  id           String   @id @default(cuid())
+  name         String
+  photo        String?
+  bio          String?
+  ppra_number  String?
+  agency       String?
+  areas_served String[]
+  profile_url  String   @unique
+  whatsapp     String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  listings Listing[]
+  leads    Lead[]
+}
+
+model Listing {
+  id          String        @id @default(cuid())
+  agent_id    String
+  agent       Agent         @relation(fields: [agent_id], references: [id])
+  address     String
+  price       Int
+  beds        Int
+  baths       Int
+  type        ListingType
+  area        String
+  size_sqm    Int?
+  video_url   String?
+  photo_urls  String[]
+  description String?
+  status      ListingStatus @default(active)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+
+  views    ListingView[]
+  leads    Lead[]
+  feedback ViewingFeedback[]
+}
+
+model ListingView {
+  id           String   @id @default(cuid())
+  listing_id   String
+  listing      Listing  @relation(fields: [listing_id], references: [id])
+  session_id   String
+  is_returning Boolean  @default(false)
+  watch_percent Int     @default(0)
+  saved        Boolean  @default(false)
+  timestamp    DateTime @default(now())
+
+  @@index([listing_id])
+  @@index([session_id])
+}
+
+model Lead {
+  id          String    @id @default(cuid())
+  listing_id  String
+  listing     Listing   @relation(fields: [listing_id], references: [id])
+  agent_id    String
+  agent       Agent     @relation(fields: [agent_id], references: [id])
+  buyer_name  String?
+  buyer_phone String
+  stage       LeadStage @default(lead)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  feedback ViewingFeedback?
+
+  @@index([agent_id])
+  @@index([listing_id])
+}
+
+model ViewingFeedback {
+  id            String       @id @default(cuid())
+  lead_id       String       @unique
+  lead          Lead         @relation(fields: [lead_id], references: [id])
+  listing_id    String
+  listing       Listing      @relation(fields: [listing_id], references: [id])
+  objection_chip ObjectionChip
+  submitted_at  DateTime     @default(now())
+}
+
+enum ListingType {
+  apartment
+  house
+  townhouse
+  commercial
+  land
+}
+
+enum ListingStatus {
+  active
+  under_offer
+  sold
+  let
+}
+
+enum LeadStage {
+  lead
+  viewing_requested
+  viewing_confirmed
+  viewed
+  offer
+  closed
+}
+
+enum ObjectionChip {
+  price
+  condition
+  location
+  size
+  timing
+  financing
+  just_looking
+  loved_it
+}
